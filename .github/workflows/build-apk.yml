@@ -1,5 +1,7 @@
 name: Build APK
 on: [workflow_dispatch]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -8,16 +10,27 @@ jobs:
       - name: Setup Android
         run: |
           sudo apt update
-          sudo apt install -y openjdk-17-jdk wget unzip
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q commandlinetools-linux-11076708_latest.zip
-          yes | ./cmdline-tools/bin/sdkmanager --licenses
+          sudo apt install -y openjdk-17-jdk wget unzip gradle
       - name: Build APK
         run: |
-          echo "Building simple WebView APK"
-          echo "Downloading prebuilt WebView shell"
-      - name: Upload APK
+          mkdir -p app/src/main/java/com/navtex/panel
+          echo 'package com.navtex.panel;
+import android.app.Activity;
+import android.os.Bundle;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+public class MainActivity extends Activity {
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    WebView w = new WebView(this);
+    w.getSettings().setJavaScriptEnabled(true);
+    w.setWebViewClient(new WebViewClient());
+    w.loadUrl("https://doubao.com/app/app_17ehvuar44v");
+    setContentView(w);
+  }
+}' > app/src/main/java/com/navtex/panel/MainActivity.java
+      - name: Upload to Release
         uses: actions/upload-artifact@v4
         with:
           name: navtex-panel-apk
-          path: **/*.apk
+          path: app/**/*.apk
